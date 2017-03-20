@@ -60,7 +60,10 @@ def replyToCalledHashVerifyFromClient(filename, filehash):
         filearg="cksum" + " " + filearg
         b=os.popen(filearg).read()
         b=b.split()
-        if(int(b[0])==int(filehash)):
+        # print "b:",b
+        if(len(b)==0): #case when there is no file which the user has asked to verify the hash for.
+            conn.send("No such file present.")
+        elif(int(b[0])==int(filehash)):
             conn.send("No changes made to the file.")
         else:
             lsResult=os.popen('ls -l').read()

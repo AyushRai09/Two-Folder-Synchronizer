@@ -71,15 +71,14 @@ def hashVerifyOnServer(filename, command):
         filearg=filename
         filearg="cksum"+" " + filename
         hashValue=os.popen(filearg).read()
-        command=command + " " + hashValue
+        print "hashValue:",hashValue
+        command=command + " " + hashValue + '00'
         s.send(command)
         result=s.recv(1024)
         if(result=="No changes made to the file."):
             print result
         else:
             result=result.split()
-            print "The file was modified since last access:"
-            print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
             i=0
             while(i<len(result)):
                 print result[i], result[i+1], result[i+2], result[i+3]
@@ -135,7 +134,7 @@ while True:
     elif(arg[0] =='hash' and arg[1] =='verify'):
         hashVerifyOnServer(arg[2],command)
 
-    elif(arg[0]=='index' and and arg[1]=="regex" len(arg)==3):
+    elif(arg[0]=='index' and arg[1]=="regex" and len(arg)==3):
         regexCheckerOnServer(arg[2])
 
     else:
