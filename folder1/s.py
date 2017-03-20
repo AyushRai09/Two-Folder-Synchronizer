@@ -25,7 +25,7 @@ def hashVerifyOnClient(filename, command):
             print result
         else:
             result=result.split()
-            print "Following files were modified:"
+            print "The file was modified since last access:"
             print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
             i=0
             while(i<len(result)):
