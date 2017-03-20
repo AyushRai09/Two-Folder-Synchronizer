@@ -33,12 +33,11 @@ while True:
     print('receiving data...')
     data = s.recv(1024)
     data=data.split()
-    print "Data:",data
     if(data[0] == 'index'):
         replyToCalledLsFromServer()
 
     elif(data[0]=='hash' and data[1]=='verify'):
-        replyToCalledHashVerifyFromServer(filename,data[3])
+        replyToCalledHashVerifyFromServer(data[2],data[3])
 
     else:
         downloadFile(data)
