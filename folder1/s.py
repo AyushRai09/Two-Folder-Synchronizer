@@ -82,7 +82,7 @@ def replyToCalledHashVerifyFromClient(filename, filehash):
 
 
 def downloadFile(data):
-        f=open('testdata', 'wb')
+        f=open('testdata.txt', 'wb')
         print 'file opened'
         print('data=%s', (data))
         if not data:
@@ -92,7 +92,7 @@ def downloadFile(data):
 
 port = 60000
 s = socket.socket()
-
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 host = ""
 
 
@@ -135,4 +135,5 @@ while True:
 
     # conn.send('Thank you for connecting')
     # conn.close()
+s.shutdown(socket.SHUT_RDWR)
 s.close()

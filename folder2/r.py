@@ -1,4 +1,4 @@
-import socket,os
+import socket,os,re
 foo=0
 arr=[[foo for i in range(100)] for j in range(100)]
 # def replyToCalledLsFromServer():
@@ -60,13 +60,11 @@ def callLsOnServer(command):
     s.send(command)
     lsResult=s.recv(1024)
     lsResult=lsResult.split('\n')
-    i=0
     del(lsResult[len(lsResult)-1]) #delte the last null character.
-    print "filename", "Time last modified"
+    i=0
     for iterator in lsResult:
         if(iterator.find('total')==-1):
             arr[i]=iterator.split()
-            print arr[i][8], arr[i][5], arr[i][6], arr[i][7]
             i=i+1
 
 def hashVerifyOnServer(filename, command):
@@ -87,6 +85,20 @@ def hashVerifyOnServer(filename, command):
                 print result[i], result[i+1], result[i+2], result[i+3]
                 i=i+4
         return
+
+def regexCheckerOnServer(pattern):
+    callLsOnServer("index")
+    i=0
+    while(i<100):
+        if(arr[i][8]!=0 and arr[i][5]!=0 and  arr[i][6]!=0 and arr[i][7]!=0):
+            m=re.search(pattern,arr[i][8])
+            if m is None:
+                i=i+1
+                continue
+            else:
+                print arr[i][8], arr[i][5], arr[i][6], arr[i][7]
+        i=i+1
+    return
 
 def DownloadRequestFromServer(filename):
         f = open(filename,'rb')
@@ -110,11 +122,21 @@ while True:
     command = raw_input("prompt:$ ")
     arg=command.split()
     # data = s.recv(1024)
-    if(arg[0] == 'index'):
+    if(arg[0] == 'index' and len(arg)==1):
         callLsOnServer(command)
+        print "filename", "Time last modified"
+        print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+        i=0
+        while(i<100):
+            if(arr[i][8]!=0 and arr[i][5]!=0 and  arr[i][6]!=0 and arr[i][7]!=0):
+                print arr[i][8], arr[i][5], arr[i][6], arr[i][7]
+            i=i+1
 
     elif(arg[0] =='hash' and arg[1] =='verify'):
         hashVerifyOnServer(arg[2],command)
+
+    elif(arg[0]=='index' and and arg[1]=="regex" len(arg)==3):
+        regexCheckerOnServer(arg[2])
 
     else:
         DownloadRequestFromServer(arg[0])
