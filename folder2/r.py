@@ -1,54 +1,6 @@
 import socket,os,re,datetime
 foo=0
 arr=[[foo for i in range(100)] for j in range(100)]
-# def replyToCalledLsFromServer():
-#         lsResult=os.popen('ls -l').read()
-#         s.send(str(lsResult))
-#         lsResult=lsResult.split('\n')
-#         i=0
-#         del(lsResult[len(lsResult)-1]) #delte the last null character.
-#         for iterator in lsResult:
-#             if(iterator.find('total')==-1):
-#                 arr[i]=iterator.split()
-#                 i=i+1
-#         return
-#
-# def replyToCalledHashVerifyFromServer(filename, filehash):
-#         filearg=filename
-#         filearg="cksum" + " " + filearg
-#         b=os.popen(filearg).read()
-#         b=b.split()
-#         print "b:", b,"filehash:",filehash
-#         if(int(b[0])==int(filehash)):
-#             s.send("No changes made to the file.")
-#         else:
-#             lsResult=os.popen('ls -l').read()
-#             lsResult=lsResult.split('\n')
-#             i=0
-#             del(lsResult[len(lsResult)-1]) #delte the last null character.
-#             for iterator in lsResult:
-#                 if(iterator.find('total')==-1):
-#                     arr[i]=iterator.split()
-#                     i=i+1
-#             string=""
-#             i=0
-#             while(i<100):
-#                 if(arr[i][8]!=0 and arr[i][8]==filename and arr[i][5]!=0 and  arr[i][6]!=0 and arr[i][7]!=0):
-#                     # print arr[i][8], arr[i][5], arr[i][6], arr[i][7]
-#                     string=string + arr[i][8] + " " + arr[i][5] + " " + arr[i][6] + " " + arr[i][7] + " "
-#                 i=i+1
-#             s.send(string)
-#         return
-#
-#
-# def downloadFile(data):
-#         f=open('testdata', 'wb')
-#         print 'file opened'
-#         print('data=%s', (data))
-#         if not data:
-#             return
-#         f.write(data)
-#         f.close()
 
 def callLsOnServer(command):
     s.send(command)
@@ -65,7 +17,6 @@ def hashVerifyOnServer(filename, command):
         filearg=filename
         filearg="cksum"+" " + filename
         hashValue=os.popen(filearg).read()
-        print "hashValue:",hashValue
         command=command + " " + hashValue + '00'
         s.send(command)
         result=s.recv(1024)
@@ -110,7 +61,7 @@ def timeStampChecker(ts1Month,ts1Date,ts1Time,ts2Month,ts2Date,ts2Time):
         i=i+1
 
 
-def DownloadRequestFromServer(command, filename):
+def DownloadRequestFromServerTCP(command, filename):
         s.send(command)
         data=s.recv(1024)
         f=open(filename, 'wb')
@@ -121,22 +72,30 @@ def DownloadRequestFromServer(command, filename):
         f.write(data)
         f.close()
 
-# def DownloadRequestFromServer(filename):
-#         f = open(filename,'rb')
-#         l = f.read(1024)
-#         while (l):
-#            s.send(l)
-#            print('Sent ',repr(l))
-#            l = f.read(1024)
-#         f.close()
-#         print('Done sending')
+def DownloadRequestFromServerUDP(command, filename):
+        s.send(command)
+        data,addressWaste=s2.recvfrom(1024)
+        f=open(filename, 'wb')
+        print 'file opened'
+        print('data=%s', (data))
+        if not data:
+            return
+        f.write(data)
+        f.close()
 
-s = socket.socket()
-s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 host = ""
 port = 60000
+port2= 50000
+s = socket.socket() # for TCP
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+s2=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+# s2.sendto(MESSAGE, (UDP_IP, UDP_PORT))
+
 
 s.connect((host, port))
+s2.bind((host,port2))
 # s.send("Hello server!")
 
 while True:
@@ -162,8 +121,12 @@ while True:
     elif(arg[0]=='index' and arg[1]=='shortlist' and len(arg)==8):
         timeStampChecker(arg[2],arg[3],arg[4],arg[5],arg[6],arg[7])
 
+    elif(arg[0]=='download' and arg[1]=='TCP' and len(arg)==3):
+        DownloadRequestFromServerTCP(arg[0]+ " " + arg[1]+ " " + arg[2], arg[2])
+
     elif(arg[0]=='download' and arg[1]=='UDP' and len(arg)==3):
-        DownloadRequestFromServer(arg[0]+ " " + arg[1]+ " " + arg[2], arg[2])
+        DownloadRequestFromServerUDP(arg[0]+ " " + arg[1]+ " " + arg[2], arg[2])
+
     else:
         print "Invalid Request."
 
