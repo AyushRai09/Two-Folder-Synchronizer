@@ -1,4 +1,4 @@
-import socket,os
+import socket,os,datetime
 foo=0
 arr=[[foo for i in range(100)] for j in range(100)]
 
@@ -14,32 +14,41 @@ def replyToCalledLsFromClient():
                 i=i+1
         return
 
-def replyToCalledHashVerifyFromClient(filename, filehash):
-        filearg=filename
-        filearg="cksum" + " " + filearg
+def replyToCalledHashVerifyFromClient(filename, sentFileMonth, sentFileDay, sentFileTime, filehash):
+        filearg="cksum" + " " + filename
         b=os.popen(filearg).read()
-        b=b.split()
-        # print "b:",b
-        if(len(b)==0): #case when there is no file which the user has asked to verify the hash for.
-            conn.send("No such file present.")
-        elif(int(b[0])==int(filehash)):
-            conn.send("No changes made to the file.")
-        else:
-            lsResult=os.popen('ls -l').read()
-            lsResult=lsResult.split('\n')
-            i=0
-            del(lsResult[len(lsResult)-1]) #delte the last null character.
-            for iterator in lsResult:
-                if(iterator.find('total')==-1):
-                    arr[i]=iterator.split()
-                    i=i+1
-            string=""
-            i=0
-            while(i<100):
-                if(arr[i][8]!=0 and arr[i][8]==filename and arr[i][5]!=0 and  arr[i][6]!=0 and arr[i][7]!=0):
-                    string=string + arr[i][8] + " " + arr[i][5] + " " + arr[i][6] + " " + arr[i][7] + " "
+        b=b.split() #b[0] contains the hashValue of the file at the server.
+        filearg="ls -l" + " " + filename
+        lsResult=os.popen(filearg).read()
+        lsResult=lsResult.split('\n')
+        i=0
+        del(lsResult[len(lsResult)-1]) #delte the last null character.
+        for iterator in lsResult:
+            if(iterator.find('total')==-1):
+                arr[i]=iterator.split()
                 i=i+1
-            conn.send(string)
+        string=""
+        i=0
+        while(i<100):
+            if(arr[i][8]==filename):
+                timestamp1=arr[i][5] + " " + arr[i][6] + " " + arr[i][7] + " " + "2017"
+                timestamp2=sentFileMonth + " " + sentFileDay + " " + sentFileTime + " " + "2017"
+                print "timestamp1:",timestamp1, "timestamp2:",timestamp2
+                t1 = datetime.datetime.strptime(timestamp1, "%b %d %H:%M %Y")
+                t2 = datetime.datetime.strptime(timestamp2, "%b %d %H:%M %Y")
+
+                if(max(t1,t2)==t1):#Server's file is the latest file.
+                    string=arr[i][8] + " " + arr[i][5] + " " + arr[i][6] + " " + arr[i][7]
+                elif(max(t1,t2)==t2):#Client's file is the latest file.
+                    string=filename+" " +sentFileMonth + " " + sentFileDay + " " + sentFileTime
+                break
+            i=i+1
+
+        # while(i<100):
+        #     if(arr[i][8]!=0 and arr[i][8]==filename and arr[i][5]!=0 and  arr[i][6]!=0 and arr[i][7]!=0):
+        #         string=string + arr[i][8] + " " + arr[i][5] + " " + arr[i][6] + " " + arr[i][7] + " "
+        #     i=i+1
+        conn.send(string)
         return
 
 
@@ -87,13 +96,14 @@ while True:
     if(data[0] == 'index'):
         replyToCalledLsFromClient()
 
-    elif(data[0]=='hash' and data[1]=='verify'):
-        replyToCalledHashVerifyFromClient(data[2],data[3])
+    if(len(data)==7):
+        if(data[5]=='hash' and data[6]=='verify'):
+            replyToCalledHashVerifyFromClient(data[0],data[1],data[2],data[3],data[4])
 
-    elif(data[0]=='download' and data[1]=='TCP' and len(data)==3):
+    if(data[0]=='download' and data[1]=='TCP' and len(data)==3):
         DownloadRequestFromClientTCP(data[2])
 
-    elif(data[0]=='download' and data[1]=='UDP' and len(data)==3):
+    if(data[0]=='download' and data[1]=='UDP' and len(data)==3):
         DownloadRequestFromClientUDP(data[2])
 
 s.shutdown(socket.SHUT_RDWR)

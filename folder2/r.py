@@ -1,6 +1,7 @@
 import socket,os,re,datetime
 foo=0
 arr=[[foo for i in range(100)] for j in range(100)]
+temp=[[0 for i in range (100)] for j in range(100)]
 
 def callLsOnServer(command):
     s.send(command)
@@ -14,21 +15,25 @@ def callLsOnServer(command):
             i=i+1
 
 def hashVerifyOnServer(filename, command):
-        filearg=filename
+        filearg='ls -l' + " " + filename
+        lsResult=os.popen(filearg).read()
+        lsResult=lsResult.split()
         filearg="cksum"+" " + filename
         hashValue=os.popen(filearg).read()
-        command=command + " " + hashValue + '00'
-        s.send(command)
+        hashValue=hashValue.split()
+        s.send(lsResult[8]+ " " + lsResult[5] + " " + lsResult[6]+ " " + lsResult[7] + " " + hashValue[0] + " " + "hash" + " " + "verify")
         result=s.recv(1024)
-        if(result=="No changes made to the file."):
-            print result
-        else:
-            result=result.split()
-            i=0
-            while(i<len(result)):
-                print result[i], result[i+1], result[i+2], result[i+3]
-                i=i+4
-        return
+        return result
+
+def hashVerifyOnServerForAll():
+    callLsOnServer("index")
+    i=0
+    while(i<100):
+        if(arr[i][8]!=0 and arr[i][5]!=0 and  arr[i][6]!=0 and arr[i][7]!=0):
+            result=hashVerifyOnServer(arr[i][8],"hash"+ " " + "verify" + " " + arr[i][8])
+            if(result!="No changes made to the file."):
+                arr[i].append(-107)
+        i=i+1
 
 def regexCheckerOnServer(pattern):
     callLsOnServer("index")
@@ -113,7 +118,17 @@ while True:
             i=i+1
 
     elif(arg[0] =='hash' and arg[1] =='verify' and len(arg)==3):
-        hashVerifyOnServer(arg[2],command)
+        result=hashVerifyOnServer(arg[2],command)
+        result=result.split()
+        print result[0], result[1], result[2], result[3]
+
+
+    elif(arg[0]=='hash' and arg[1]=='checkall' and len(arg)==2):
+        hashVerifyOnServerForAll()
+        i=0
+        while(i<100):
+            if(arr[i][len(arr[i])-1]==-107):
+                print arr[i][8], arr[i][5], arr[i][6], arr[i][7]
 
     elif(arg[0]=='index' and arg[1]=="regex" and len(arg)==3):
         regexCheckerOnServer(arg[2])
