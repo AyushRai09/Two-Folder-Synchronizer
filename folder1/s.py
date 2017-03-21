@@ -84,14 +84,24 @@ def replyToCalledHashVerifyFromClient(filename, filehash):
         return
 
 
-def downloadFile(data):
-        f=open('testdata.txt', 'wb')
-        print 'file opened'
-        print('data=%s', (data))
-        if not data:
-            return
-        f.write(data)
+def DownloadRequestFromClient(filename):
+        f = open(filename,'rb')
+        l = f.read(1024)
+        while (l):
+           conn.send(l)
+           print('Sent ',repr(l))
+           l = f.read(1024)
         f.close()
+        print('Done sending')
+
+# def downloadFile(data):
+#         f=open('testdata.txt', 'wb')
+#         print 'file opened'
+#         print('data=%s', (data))
+#         if not data:
+#             return
+#         f.write(data)
+#         f.close()
 
 port = 60000
 s = socket.socket()
@@ -117,8 +127,8 @@ while True:
     elif(data[0]=='hash' and data[1]=='verify'):
         replyToCalledHashVerifyFromClient(data[2],data[3])
 
-    else:
-        downloadFile(originalData)
+    elif(data[0]=='download' and data[1]=='UDP' and len(data)==3):
+        DownloadRequestFromClient(data[2])
 
     # print "arg:",arg[0]
     # print 'Got connection from',addr

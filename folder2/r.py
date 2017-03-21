@@ -1,4 +1,4 @@
-import socket,os,re
+import socket,os,re,datetime
 foo=0
 arr=[[foo for i in range(100)] for j in range(100)]
 # def replyToCalledLsFromServer():
@@ -50,12 +50,6 @@ arr=[[foo for i in range(100)] for j in range(100)]
 #         f.write(data)
 #         f.close()
 
-
-
-
-
-
-
 def callLsOnServer(command):
     s.send(command)
     lsResult=s.recv(1024)
@@ -98,16 +92,44 @@ def regexCheckerOnServer(pattern):
                 print arr[i][8], arr[i][5], arr[i][6], arr[i][7]
         i=i+1
     return
+def timeStampChecker(ts1Month,ts1Date,ts1Time,ts2Month,ts2Date,ts2Time):
+    callLsOnServer("index")
+    i=0
+    while(i<100):
+        if(arr[i][8]!=0 and arr[i][5]!=0 and  arr[i][6]!=0 and arr[i][7]!=0):
+            timestamp1=ts1Month + " " + ts1Date + " " + ts1Time + " " + "2017"
+            timestamp2=ts2Month + " " + ts2Date + " " + ts2Time + " " + "2017"
+            fileTimeStamp=arr[i][5] + " " + arr[i][6] + " " + arr[i][7] + " " +"2017"
 
-def DownloadRequestFromServer(filename):
-        f = open(filename,'rb')
-        l = f.read(1024)
-        while (l):
-           s.send(l)
-           print('Sent ',repr(l))
-           l = f.read(1024)
+            t1 = datetime.datetime.strptime(timestamp1, "%b %d %H:%M %Y")
+            t2 = datetime.datetime.strptime(timestamp2, "%b %d %H:%M %Y")
+            filet=datetime.datetime.strptime(fileTimeStamp,"%b %d %H:%M %Y")
+
+            if(max(t1,filet)==filet and max(filet,t2)==t2):
+                print arr[i][8], arr[i][5], arr[i][6], arr[i][7]
+        i=i+1
+
+
+def DownloadRequestFromServer(command, filename):
+        s.send(command)
+        data=s.recv(1024)
+        f=open(filename, 'wb')
+        print 'file opened'
+        print('data=%s', (data))
+        if not data:
+            return
+        f.write(data)
         f.close()
-        print('Done sending')
+
+# def DownloadRequestFromServer(filename):
+#         f = open(filename,'rb')
+#         l = f.read(1024)
+#         while (l):
+#            s.send(l)
+#            print('Sent ',repr(l))
+#            l = f.read(1024)
+#         f.close()
+#         print('Done sending')
 
 s = socket.socket()
 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -131,26 +153,20 @@ while True:
                 print arr[i][8], arr[i][5], arr[i][6], arr[i][7]
             i=i+1
 
-    elif(arg[0] =='hash' and arg[1] =='verify'):
+    elif(arg[0] =='hash' and arg[1] =='verify' and len(arg)==3):
         hashVerifyOnServer(arg[2],command)
 
     elif(arg[0]=='index' and arg[1]=="regex" and len(arg)==3):
         regexCheckerOnServer(arg[2])
 
-    else:
-        DownloadRequestFromServer(arg[0])
+    elif(arg[0]=='index' and arg[1]=='shortlist' and len(arg)==8):
+        timeStampChecker(arg[2],arg[3],arg[4],arg[5],arg[6],arg[7])
 
-    # originalData=data
-    # data=data.split()
-    # print "data:",data
-    # if(data[0] == 'index'):
-    #     replyToCalledLsFromServer()
-    #
-    # elif(data[0]=='hash' and data[1]=='verify'):
-    #     replyToCalledHashVerifyFromServer(data[2],data[3])
-    #
-    # else:
-    #     downloadFile(originalData)
+    elif(arg[0]=='download' and arg[1]=='UDP' and len(arg)==3):
+        DownloadRequestFromServer(arg[0]+ " " + arg[1]+ " " + arg[2], arg[2])
+    else:
+        print "Invalid Request."
+
 print('Successfully get the file')
 s.shutdown(socket.SHUT_RDWR)
 s.close()
