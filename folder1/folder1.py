@@ -192,13 +192,13 @@ class Clientthread(Thread):
                         t1 = datetime.datetime.strptime(timestamp1, "%b %d %H:%M %Y")
                         t2 = datetime.datetime.strptime(timestamp2, "%b %d %H:%M %Y")
 
-                        if(max(t1,t2)==t1):#Server has the latest file.
-                            print "Timestamp download"
+                        if(t1>t2):#Server has the latest file.
+                            # print "Timestamp download"
                             DownloadRequestFromServerTCP("download" + " " + "TCP" + " " + modified_files[i][0], modified_files[i][0])
                     j=j+1
 
                 if(fileFoundOnClient==0):
-                    print "not found file on client download"
+                    # print "not found file on client download"
                     DownloadRequestFromServerTCP("download" + " " + "TCP" + " " + modified_files[i][0], modified_files[i][0])
                 i=i+1
             threading.Timer(10,autosynchronization).start()
