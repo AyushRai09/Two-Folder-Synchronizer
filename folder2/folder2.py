@@ -1,10 +1,11 @@
 import socket,os,datetime
 import time
 from threading import Thread
+import threading
 foo=0
 arr=[[foo for i in range(100)] for j in range(100)]
 array=[[0 for i in range (100)] for j in range(100)]
-modified_files=[]
+global modified_files
 class Serverthread(Thread):
     def __init__(self):
         Thread.__init__(self)
@@ -52,7 +53,7 @@ class Serverthread(Thread):
                 l = f.read(1024)
                 while (l):
                    conn.send(l)
-                   print('Sent ',repr(l))
+                #    print('Sent ',repr(l))
                    l = f.read(1024)
                 f.close()
                 print('Done sending')
@@ -62,10 +63,10 @@ class Serverthread(Thread):
                 l = f.read(1024)
                 while (l):
                    s2.sendto(l,(host,port2))
-                   print('Sent ',repr(l))
+                #    print('Sent ',repr(l))
                    l = f.read(1024)
                 f.close()
-                print('Done sending')
+                print "Done sending", filename
 
         port = 30000
         port2=20000
@@ -141,6 +142,8 @@ class Clientthread(Thread):
 
         def hashVerifyOnServerForAll():
             callLsOnServer("index")
+            global modified_files
+            modified_files=[]
             i=0
             k=0
             while(i<100):
@@ -157,6 +160,11 @@ class Clientthread(Thread):
                             modified_files[k].append(result[4]) #hashvalue
                             k=k+1
                 i=i+1
+            i=0
+            # while(i<len(modified_files)):
+            #     print modified_files[i][0], modified_files[i][1]
+            #     i=i+1
+            # print "length:",len(modified_files)
 
         def autosynchronization():
             hashVerifyOnServerForAll()
@@ -168,8 +176,10 @@ class Clientthread(Thread):
                 if(iterator.find('total')==-1):
                     arr[i]=iterator.split()
                     i=i+1
-            lengthOfArr=i-1
+            lengthOfArr=i
             i=0
+
+            # print "modified_files:",modified_files
             while(i<len(modified_files)):
                 j=0
                 fileFoundOnClient=0
@@ -183,11 +193,14 @@ class Clientthread(Thread):
                         t2 = datetime.datetime.strptime(timestamp2, "%b %d %H:%M %Y")
 
                         if(max(t1,t2)==t1):#Server has the latest file.
+                            print "Timestamp download"
                             DownloadRequestFromServerTCP("download" + " " + "TCP" + " " + modified_files[i][0], modified_files[i][0])
                     j=j+1
                 if(fileFoundOnClient==0):
+                    print "Not found file on client download    "
                     DownloadRequestFromServerTCP("download" + " " + "TCP" + " " + modified_files[i][0], modified_files[i][0])
                 i=i+1
+            threading.Timer(10,autosynchronization).start()
 
         def regexCheckerOnServer( pattern):
             callLsOnServer("index")
@@ -231,7 +244,7 @@ class Clientthread(Thread):
                         break
                     f.write(data)
                 s.settimeout(None)
-                print "Done receiving."
+                print "Done receiving ", filename
                 f.close()
 
 
@@ -286,6 +299,7 @@ class Clientthread(Thread):
             elif(arg[0]=='hash' and arg[1]=='checkall' and len(arg)==2):
                 hashVerifyOnServerForAll()
                 i=0
+                # print "length:",len(modified_files)
                 while(i<len(modified_files)):
                     print modified_files[i][0], modified_files[i][1], modified_files[i][2], modified_files[i][3], modified_files[i][4]
                     i=i+1
@@ -304,6 +318,7 @@ class Clientthread(Thread):
 
             elif(arg[0]=='start' and arg[1]=='autosync' and len(arg)==2):
                 autosynchronization()
+                print "Folder2 updated."
 
             else:
                 print "Invalid Request."
