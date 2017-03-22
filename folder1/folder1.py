@@ -4,6 +4,7 @@ from threading import Thread
 foo=0
 arr=[[foo for i in range(100)] for j in range(100)]
 array=[[0 for i in range (100)] for j in range(100)]
+modified_files=[]
 class Serverthread(Thread):
     def __init__(self):
         Thread.__init__(self)
@@ -139,7 +140,7 @@ class Clientthread(Thread):
                 else:
                     return 0
 
-        def hashVerifyOnServerForAll(self):
+        def hashVerifyOnServerForAll():
             callLsOnServer("index")
             i=0
             k=0
@@ -156,6 +157,38 @@ class Clientthread(Thread):
                             modified_files[k].append(result[3]) #date
                             modified_files[k].append(result[4]) #hashvalue
                             k=k+1
+                i=i+1
+
+
+        def autosynchronization():
+            hashVerifyOnServerForAll()
+            lsResult=os.popen('ls -l').read()
+            lsResult=lsResult.split('\n')
+            i=0
+            del(lsResult[len(lsResult)-1]) #delte the last null character.
+            for iterator in lsResult:
+                if(iterator.find('total')==-1):
+                    arr[i]=iterator.split()
+                    i=i+1
+            lengthOfArr=i-1
+            i=0
+            while(i<len(modified_files)):
+                j=0
+                fileFoundOnClient=0
+                while(j<lengthOfArr):
+                    if(modified_files[i][0]==arr[j][8]):
+                        fileFoundOnClient=1;
+                        timestamp1=modified_files[i][1] + " " + modified_files[i][2] + " " + modified_files[i][3] + " " + "2017"
+                        timestamp2=arr[j][5] + " " + arr[j][6] + " " + arr[j][7] + " " + "2017"
+
+                        t1 = datetime.datetime.strptime(timestamp1, "%b %d %H:%M %Y")
+                        t2 = datetime.datetime.strptime(timestamp2, "%b %d %H:%M %Y")
+
+                        if(max(t1,t2)==t1):#Server has the latest file.
+                            DownloadRequestFromServerTCP("download" + " " + "TCP" + " " + modified_files[i][0], modified_files[i][0])
+                    j=j+1
+                if(fileFoundOnClient==0):
+                    DownloadRequestFromServerTCP("download" + " " + "TCP" + " " + modified_files[i][0], modified_files[i][0])
                 i=i+1
 
         def regexCheckerOnServer( pattern):
@@ -195,7 +228,7 @@ class Clientthread(Thread):
                     try:
                         s.settimeout(1.0)
                         data=s.recv(1024)
-                        print('data=%s',(data))
+                        # print('data=%s',(data))
                     except:
                         break
                     f.write(data)
@@ -209,7 +242,7 @@ class Clientthread(Thread):
                 data,addressWaste=s2.recvfrom(1024)
                 f=open(filename, 'wb')
                 print 'file opened'
-                print('data=%s', (data))
+                # print('data=%s', (data))
                 if not data:
                     return
                 f.write(data)
@@ -270,6 +303,9 @@ class Clientthread(Thread):
 
             elif(arg[0]=='download' and arg[1]=='UDP' and len(arg)==3):
                 DownloadRequestFromServerUDP(arg[0]+ " " + arg[1]+ " " + arg[2], arg[2])
+
+            elif(arg[0]=='start' and arg[1]=='autosync' and len(arg)==2):
+                autosynchronization()
 
             else:
                 print "Invalid Request."
