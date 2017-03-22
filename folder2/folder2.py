@@ -56,6 +56,7 @@ class Serverthread(Thread):
                 #    print('Sent ',repr(l))
                    l = f.read(1024)
                 f.close()
+                conn.send("stat -c \"%A %a %N\""+ " " + filename)
                 print('Done sending')
 
         def DownloadRequestFromClientUDP(filename):
@@ -67,6 +68,11 @@ class Serverthread(Thread):
                    l = f.read(1024)
                 f.close()
                 print "Done sending", filename
+
+        def sendFilePermission(filename):
+                filearg=os.popen("stat -c \"%A %a %N\"" + " " + filename).read()
+                conn.send(filearg)
+                return
 
         port = 30000
         port2=20000
@@ -89,6 +95,9 @@ class Serverthread(Thread):
             originalData=data
             data=data.split()
             # print "data:",data
+            if(data[0]=='permission' and len(data)==2):
+                sendFilePermission(data[1])
+
             if(data[0] == 'index'):
                 replyToCalledLsFromClient()
 
@@ -233,6 +242,9 @@ class Clientthread(Thread):
                 i=i+1
 
         def DownloadRequestFromServerTCP( command, filename):
+                s.send("permission"+ " " + filename)
+                octalResult=s.recv(1024)
+                octalResult=octalResult.split()
                 s.send(command)
                 f=open(filename, 'wb')
                 while(True):
@@ -246,6 +258,7 @@ class Clientthread(Thread):
                 s.settimeout(None)
                 print "Done receiving ", filename
                 f.close()
+                os.system("chmod"+ " " + octalResult[1]+ " " + filename)
 
 
         def DownloadRequestFromServerUDP( command, filename):
@@ -278,6 +291,8 @@ class Clientthread(Thread):
             command = raw_input("prompt:$ ")
             arg=command.split()
             # data = s.recv(1024)
+            if(command==""):
+                continue
             if(arg[0] == 'index' and len(arg)==1):
                 callLsOnServer(command)
                 print "filename", "Time last modified"

@@ -49,6 +49,7 @@ class Serverthread(Thread):
 
 
         def DownloadRequestFromClientTCP(filename):
+                print 'Done sending', filename
                 f = open(filename,'rb')
                 l = f.read(1024)
                 while (l):
@@ -56,7 +57,6 @@ class Serverthread(Thread):
                 #    print('Sent ',repr(l))
                    l = f.read(1024)
                 f.close()
-                print 'Done sending', filename
 
         def DownloadRequestFromClientUDP(filename):
                 f = open(filename,'rb')
@@ -67,6 +67,10 @@ class Serverthread(Thread):
                    l = f.read(1024)
                 f.close()
                 print('Done sending')
+        def sendFilePermission(filename):
+                filearg=os.popen("stat -c \"%A %a %N\"" + " " + filename).read()
+                conn.send(filearg)
+                return
 
         port = 60000
         port2=50000
@@ -89,6 +93,9 @@ class Serverthread(Thread):
             originalData=data
             data=data.split()
             # print "data:",data
+            if(data[0]=='permission' and len(data)==2):
+                sendFilePermission(data[1])
+
             if(data[0] == 'index'):
                 replyToCalledLsFromClient()
 
@@ -234,6 +241,9 @@ class Clientthread(Thread):
                 i=i+1
 
         def DownloadRequestFromServerTCP( command, filename):
+                s.send("permission"+ " " + filename)
+                octalResult=s.recv(1024)
+                octalResult=octalResult.split()
                 s.send(command)
                 f=open(filename, 'wb')
                 while(True):
@@ -246,7 +256,7 @@ class Clientthread(Thread):
                     f.write(data)
                 s.settimeout(None)
                 print "Done receiving ", filename
-                f.close()
+                os.system("chmod"+ " " + octalResult[1]+ " " + filename)
 
 
         def DownloadRequestFromServerUDP( command, filename):
@@ -279,6 +289,8 @@ class Clientthread(Thread):
             command = raw_input("prompt:$ ")
             arg=command.split()
             # data = s.recv(1024)
+            if(command==""):
+                continue
             if(arg[0] == 'index' and len(arg)==1):
                 callLsOnServer(command)
                 print "filename", "Time last modified"
